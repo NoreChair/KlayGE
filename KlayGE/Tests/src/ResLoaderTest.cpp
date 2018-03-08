@@ -46,26 +46,52 @@ TEST(ResLoaderTest, MountUnmountPath)
 
 TEST(ResLoaderTest, MountUnmount7zPath)
 {
-	ResLoader::Instance().Mount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z//");
+	ResLoader::Instance().Mount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z");
 	EXPECT_FALSE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
 
 	auto res = ResLoader::Instance().Open("ResLoaderTestData/Test.txt");
 	EXPECT_TRUE(res);
 	EXPECT_EQ(ReadWholeFile(res), sanity_string);
 
-	ResLoader::Instance().Unmount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z//");
+	ResLoader::Instance().Unmount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z");
 	EXPECT_TRUE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
 }
 
 TEST(ResLoaderTest, MountUnmountInside7zPath)
 {
-	ResLoader::Instance().Mount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z//ResLoader");
+	ResLoader::Instance().Mount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z/ResLoader");
 	EXPECT_FALSE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
 
 	auto res = ResLoader::Instance().Open("ResLoaderTestData/Test.txt");
 	EXPECT_TRUE(res);
 	EXPECT_EQ(ReadWholeFile(res), sanity_string);
 
-	ResLoader::Instance().Unmount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z//ResLoader");
+	ResLoader::Instance().Unmount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z/ResLoader");
+	EXPECT_TRUE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
+}
+
+TEST(ResLoaderTest, MountUnmountEncrypt7zPath)
+{
+	ResLoader::Instance().Mount("ResLoaderTestData", "../../Tests/media/ResLoader/TestPassword.7z|1234");
+	EXPECT_FALSE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
+
+	auto res = ResLoader::Instance().Open("ResLoaderTestData/Test.txt");
+	EXPECT_TRUE(res);
+	EXPECT_EQ(ReadWholeFile(res), sanity_string);
+
+	ResLoader::Instance().Unmount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z");
+	EXPECT_TRUE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
+}
+
+TEST(ResLoaderTest, MountUnmountInsideEncrypt7zPath)
+{
+	ResLoader::Instance().Mount("ResLoaderTestData", "../../Tests/media/ResLoader/TestPassword.7z|1234/ResLoader");
+	EXPECT_FALSE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
+
+	auto res = ResLoader::Instance().Open("ResLoaderTestData/Test.txt");
+	EXPECT_TRUE(res);
+	EXPECT_EQ(ReadWholeFile(res), sanity_string);
+
+	ResLoader::Instance().Unmount("ResLoaderTestData", "../../Tests/media/ResLoader/Test.7z/ResLoader");
 	EXPECT_TRUE(ResLoader::Instance().Locate("ResLoaderTestData/Test.txt").empty());
 }

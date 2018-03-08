@@ -301,7 +301,33 @@ namespace KlayGE
 	std::string ResLoader::RealPath(std::string const & path)
 	{
 		std::string abs_path = this->AbsPath(path);
-		if (!abs_path.empty() && (abs_path[abs_path.length() - 1] != '/'))
+		if (abs_path.empty())
+		{
+			std::string package_path;
+			std::string password;
+			std::string path_in_package;
+			this->DecomposePackageName(path, package_path, password, path_in_package);
+			if (!package_path.empty())
+			{
+				std::string real_package_path = this->RealPath(package_path);
+				real_package_path.pop_back();
+
+				abs_path = real_package_path;
+				if (!password.empty())
+				{
+					abs_path += "|" + password;
+				}
+				if (!path_in_package.empty())
+				{
+					abs_path += "/" + path_in_package;
+				}
+				if (abs_path.back() != '/')
+				{
+					abs_path.push_back('/');
+				}
+			}
+		}
+		else if (abs_path.back() != '/')
 		{
 			abs_path.push_back('/');
 		}
@@ -316,21 +342,44 @@ namespace KlayGE
 		password = "";
 		path_in_package = "";
 
-		auto const pkt_offset = path.find("//");
-		if (pkt_offset != std::string::npos)
+		size_t start_offset = 0;
+		for (;;)
 		{
-			package_path = std::string(path.substr(0, pkt_offset));
-			std::filesystem::path pkt_path(package_path);
-			if (std::filesystem::exists(pkt_path)
-				&& (std::filesystem::is_regular_file(pkt_path) || std::filesystem::is_symlink(pkt_path)))
+			auto const pkt_offset = path.find(".7z", start_offset);
+			if (pkt_offset != std::string_view::npos)
 			{
-				auto const password_offset = package_path.find("|");
-				if (password_offset != std::string::npos)
+				package_path = std::string(path.substr(0, pkt_offset + 3));
+				std::filesystem::path pkt_path(package_path);
+				if (std::filesystem::exists(pkt_path)
+					&& (std::filesystem::is_regular_file(pkt_path) || std::filesystem::is_symlink(pkt_path)))
 				{
-					password = package_path.substr(password_offset + 1);
-					package_path = package_path.substr(0, password_offset - 1);
+					auto const next_slash_offset = path.find('/', pkt_offset + 3);
+					if ((path.size() > pkt_offset + 3) && (path[pkt_offset + 3] == '|'))
+					{
+						auto const password_start_offset = pkt_offset + 4;
+						if (next_slash_offset != std::string_view::npos)
+						{
+							password = path.substr(password_start_offset, next_slash_offset - password_start_offset);
+						}
+						else
+						{
+							password = path.substr(password_start_offset);
+						}
+					}
+					if (next_slash_offset != std::string_view::npos)
+					{
+						path_in_package = path.substr(next_slash_offset + 1);
+					}
+					break;
 				}
-				path_in_package = path.substr(pkt_offset + 2);
+				else
+				{
+					start_offset = pkt_offset + 3;
+				}
+			}
+			else
+			{
+				break;
 			}
 		}
 	}
@@ -353,7 +402,7 @@ namespace KlayGE
 		if (!real_path.empty())
 		{
 			std::string virtual_path_str(virtual_path);
-			if (!virtual_path.empty() && (virtual_path[virtual_path.length() - 1] != '/'))
+			if (!virtual_path.empty() && (virtual_path.back() != '/'))
 			{
 				virtual_path_str.push_back('/');
 			}
@@ -370,7 +419,7 @@ namespace KlayGE
 		if (!real_path.empty())
 		{
 			std::string virtual_path_str(virtual_path);
-			if (!virtual_path.empty() && (virtual_path[virtual_path.length() - 1] != '/'))
+			if (!virtual_path.empty() && (virtual_path.back() != '/'))
 			{
 				virtual_path_str.push_back('/');
 			}
